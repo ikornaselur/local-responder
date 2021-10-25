@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "A asynchronous temporary web server to repond to requests"
 authors = ["Axel <dev@absalon.is>"]
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/ikornaselur/local-responder"
 
 [tool.poetry.dependencies]
 python = "^3.8"
