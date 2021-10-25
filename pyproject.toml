@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "local-responder"
-version = "0.1.0"
+version = "0.1.1"
 description = "A asynchronous temporary web server to repond to requests"
 authors = ["Axel <dev@absalon.is>"]
 license = "MIT"
