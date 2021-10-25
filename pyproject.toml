@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "local-responder"
+version = "0.1.0"
+description = "A asynchronous temporary web server to repond to requests"
+authors = ["Axel <dev@absalon.is>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+isort = "^5.9.3"
+black = "^21.9b0"
+mypy = "^0.910"
+flake8 = "^4.0.1"
+flake8-builtins = "^1.5.3"
+flake8-isort = "^4.1.1"
+flake8-bugbear = "^21.9.2"
+flake8-black = "^0.2.3"
+flake8-annotations = "^2.7.0"
+ipdb = "^0.13.9"
+pdbpp = "^0.10.3"
+pytest = "^6.2.5"
+pytest-clarity = "^1.0.1"
+ipython = "^7.28.0"
+
+
+[tool.black]
+target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+src_paths = ["src", "tests"]
+extra_standard_library = ['typing_extensions']
+
+[tool.mypy]
+python_version = "3.8"
+check_untyped_defs = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
