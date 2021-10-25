@@ -11,8 +11,10 @@ very simple manner.
 You can import the `respond` function and use it as an asynchronous context manager
 
 ```python
+import asyncio
 import aiohttp
 from local_responder import respond
+
 
 async def func() -> None:
     async with aiohttp.ClientSession() as session:
@@ -22,12 +24,12 @@ async def func() -> None:
             method="get",
             status_code=200,
         ):
-            response = session.get('http://localhost:5000/health')
+            response = await session.get("http://localhost:5000/health")
 
             data = await response.json()
 
             assert data == {"status": "OK"}
-            assert response.status_code == 200
+            assert response.status == 200
 
         async with respond(
             json={"status": "Error"},
@@ -35,12 +37,17 @@ async def func() -> None:
             method="get",
             status_code=500,
         ):
-            response = session.get('http://localhost:5000/health')
+            response = await session.get("http://localhost:5000/health")
 
             data = await response.json()
 
             assert data == {"status": "Error"}
-            assert response.status_code == 500
+            assert response.status == 500
+
+
+if __name__ == "__main__":
+    asyncio.run(func())
+
 ```
 
 The context manager will raise an error if a request is made to an undefined
