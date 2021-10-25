@@ -1,8 +1,8 @@
 mypy:
-	@poetry run mypy src/$FOLDER_NAME/* tests/*
+	@poetry run mypy src/local_responder/* tests/*
 
 flake8:
-	@poetry run flake8 src/$FOLDER_NAME/* tests/*
+	@poetry run flake8 src/local_responder/* tests/*
 
 lint: mypy flake8
 

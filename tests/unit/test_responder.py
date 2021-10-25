@@ -1,5 +1,5 @@
-from aiohttp import ClientSession
 import pytest
+from aiohttp import ClientSession
 
 from local_responder import BindAddressException, InvalidPathException, respond
 

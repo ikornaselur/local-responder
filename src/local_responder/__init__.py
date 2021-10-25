@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Literal, Optional, Union
+from typing import Any, AsyncIterator, Awaitable, Callable, Literal, Optional, Union
 
 from aiohttp import web
 
@@ -10,11 +10,16 @@ METHODS = ("get", "post", "delete")
 class ResponderException(Exception):
     pass
 
+
 class InvalidPathException(ResponderException):
     pass
 
+
 class BindAddressException(ResponderException):
     pass
+
+
+Handler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
 
 @asynccontextmanager
@@ -32,7 +37,7 @@ async def respond(
         raise ValueError(f'"{method}" method isn\'t supported')
     arg_count = sum(param is not None for param in (json, body, text))
     if arg_count != 1:
-        raise ValueError(f"You need to provide only one of `json`, `body` or `text`")
+        raise ValueError("You need to provide only one of `json`, `body` or `text`")
 
     # Set up temporary view
     async def view(request: web.Request) -> web.Response:
@@ -44,7 +49,9 @@ async def respond(
     requests = []
 
     @web.middleware
-    async def handle_invalid_path(request: web.Request, handler) -> None:
+    async def handle_invalid_path(
+        request: web.Request, handler: Handler
+    ) -> web.StreamResponse:
         requests.append((request.method.lower(), request.path))
         return await handler(request)
 

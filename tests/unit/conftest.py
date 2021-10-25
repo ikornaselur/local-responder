@@ -1,8 +1,10 @@
-import pytest
+from typing import AsyncIterator
 
 import aiohttp
+import pytest
+
 
 @pytest.fixture
-async def session():
+async def session() -> AsyncIterator[aiohttp.ClientSession]:
     async with aiohttp.ClientSession() as session:
         yield session
