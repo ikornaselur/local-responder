@@ -1,10 +1,11 @@
 # Local Responder
 
-Local Responder is a helper function that creates a simple web server with just
-one view that has only one purpose, to return simple data.
+Local Responder is a helper context manager that creates a web server with just
+one view that has only one purpose, to return simple predefined data.
 
 This is created just for the purpose of using in tests, to mock out an API in a
-very simple manner.
+very simple manner. It's mostly useful for a blackbox like test where you are
+mocking out an external API while making requests to the "blackbox" api.
 
 ## Usage
 
