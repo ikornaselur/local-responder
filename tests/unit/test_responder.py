@@ -37,6 +37,28 @@ async def test_body_response(session: ClientSession) -> None:
 
 
 @pytest.mark.asyncio
+async def test_post_view(session: ClientSession) -> None:
+    async with respond(text="Success", status_code=201, path="/create", method="post"):
+        response = await session.post("http://localhost:5000/create")
+        text = await response.text()
+
+        assert text == "Success"
+        assert response.status == 201
+
+
+@pytest.mark.asyncio
+async def test_delete_view(session: ClientSession) -> None:
+    async with respond(
+        text="Success", status_code=202, path="/delete", method="delete"
+    ):
+        response = await session.delete("http://localhost:5000/delete")
+        text = await response.text()
+
+        assert text == "Success"
+        assert response.status == 202
+
+
+@pytest.mark.asyncio
 async def test_custom_status_code(session: ClientSession) -> None:
     async with respond(text="Uh oh, this isn't good", status_code=400):
         response = await session.get("http://localhost:5000/")
@@ -93,7 +115,7 @@ async def test_custom_port(session: ClientSession) -> None:
 
 
 @pytest.mark.asyncio
-async def test_respond_raises_if_unable_to_bind_port(session: ClientSession) -> None:
+async def test_respond_raises_if_unable_to_bind_port() -> None:
     with pytest.raises(
         BindAddressException, match="Unable to bind address:.*address already in use"
     ):
@@ -115,3 +137,40 @@ async def test_multiple_concurrent_responses(session: ClientSession) -> None:
         alice_response = await session.get("http://localhost:5002/alice")
         alice_text = await alice_response.text()
         assert alice_text == "Hi, I'm Alice!"
+
+
+@pytest.mark.asyncio
+async def test_tracked_get_requests(session: ClientSession) -> None:
+    async with respond(text="Hello, there!") as api:
+        await session.get("http://localhost:5000/", params={"foo": "bar"})
+        assert len(api.calls) == 1
+        assert api.calls[0].query == {"foo": "bar"}
+
+        await session.get("http://localhost:5000/", params={"baz": "qux"})
+        assert len(api.calls) == 2
+        assert api.calls[1].query == {"baz": "qux"}
+
+
+@pytest.mark.asyncio
+async def test_tracked_requests_reset(session: ClientSession) -> None:
+    async with respond(text="Hello, there!") as api:
+        await session.get("http://localhost:5000/", params={"foo": "bar"})
+        assert len(api.calls) == 1
+        assert api.calls[0].query == {"foo": "bar"}
+
+    async with respond(text="Hello, there!") as api:
+        await session.get("http://localhost:5000/", params={"baz": "qux"})
+        assert len(api.calls) == 1
+        assert api.calls[0].query == {"baz": "qux"}
+
+
+@pytest.mark.asyncio
+async def test_tracked_post_requests_with_json(session: ClientSession) -> None:
+    async with respond(text="Hello, there!", method="post") as api:
+        await session.post("http://localhost:5000/", json={"foo": "bar"})
+        assert len(api.calls) == 1
+        assert api.calls[0].json == {"foo": "bar"}
+
+        await session.post("http://localhost:5000/", json={"baz": "qux"})
+        assert len(api.calls) == 2
+        assert api.calls[1].json == {"baz": "qux"}

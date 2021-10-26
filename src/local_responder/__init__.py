@@ -1,5 +1,7 @@
+import dataclasses as dc
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Union
+from json.decoder import JSONDecodeError
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Union
 from typing_extensions import Literal
 
 from aiohttp import web
@@ -23,6 +25,54 @@ class BindAddressException(ResponderException):
 Handler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
 
+@dc.dataclass
+class TrackedRequest:
+    method: str
+    path: str
+    valid: bool
+    headers: Dict
+    query: Dict
+    json: Optional[Dict]
+
+
+class RequestTracker:
+    calls: List[TrackedRequest]
+    expected_method: str
+    expected_path: str
+
+    def __init__(
+        self: "RequestTracker", expected_path: str, expected_method: str
+    ) -> None:
+        self.calls = []
+        self.expected_method = expected_method.lower()
+        self.expected_path = expected_path
+
+    @property
+    def invalid_calls(self: "RequestTracker") -> List[TrackedRequest]:
+        return [tr for tr in self.calls if not tr.valid]
+
+    async def add(self: "RequestTracker", request: web.Request) -> None:
+        valid = (
+            request.method.lower() == self.expected_method
+            and request.path == self.expected_path
+        )
+        try:
+            json = await request.json()
+        except JSONDecodeError:
+            json = None
+
+        self.calls.append(
+            TrackedRequest(
+                method=request.method.lower(),
+                path=request.path,
+                valid=valid,
+                headers=dict(request.headers),
+                query=dict(request.query),
+                json=json,
+            )
+        )
+
+
 @asynccontextmanager
 async def respond(
     *,
@@ -33,7 +83,7 @@ async def respond(
     path: str = "/",
     status_code: int = 200,
     port: int = 5000,
-) -> AsyncIterator[None]:
+) -> AsyncIterator[RequestTracker]:
     if method.lower() not in METHODS:
         raise ValueError(f'"{method}" method isn\'t supported')
     arg_count = sum(param is not None for param in (json, body, text))
@@ -47,16 +97,17 @@ async def respond(
         return web.Response(body=body, text=text, status=status_code)
 
     # Handle invalid paths
-    requests = []
+    request_tracker = RequestTracker(expected_method=method, expected_path=path)
 
     @web.middleware
-    async def handle_invalid_path(
+    async def track_requests(
         request: web.Request, handler: Handler
     ) -> web.StreamResponse:
-        requests.append((request.method.lower(), request.path))
+        # request_tracker.add.append((request.method.lower(), request.path))
+        await request_tracker.add(request)
         return await handler(request)
 
-    app = web.Application(middlewares=[handle_invalid_path])
+    app = web.Application(middlewares=[track_requests])
     app.add_routes([getattr(web, method.lower())(path, view)])
 
     # Set up async runner
@@ -70,16 +121,13 @@ async def respond(
 
     # Yield and then cleanup
     try:
-        yield
+        yield request_tracker
     finally:
         await runner.cleanup()
 
     # Make sure no requests were made to invalid paths
-    invalid_requests = list(
-        (m, p) for m, p in requests if m.lower() != method.lower() or p != path
-    )
-    if invalid_requests:
-        inv_method, inv_path = invalid_requests[0]
+    if request_tracker.invalid_calls:
+        invalid_call = request_tracker.invalid_calls[0]
         raise InvalidPathException(
-            f'Invalid {inv_method.upper()} request made to "{inv_path}"'
+            f'Invalid {invalid_call.method.upper()} request made to "{invalid_call.path}"'
         )
