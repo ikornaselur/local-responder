@@ -24,13 +24,15 @@ async def func() -> None:
             path="/health",
             method="get",
             status_code=200,
-        ):
-            response = await session.get("http://localhost:5000/health")
+        ) as api:
+            response = await session.get("http://localhost:5000/health", params={"foo": "bar"})
 
             data = await response.json()
 
             assert data == {"status": "OK"}
             assert response.status == 200
+            assert len(api.calls) == 1
+            assert api.calls[0].query == {"foo": "bar"}
 
         async with respond(
             json={"status": "Error"},
@@ -48,7 +50,6 @@ async def func() -> None:
 
 if __name__ == "__main__":
     asyncio.run(func())
-
 ```
 
 The context manager will raise an error if a request is made to an undefined
@@ -57,3 +58,11 @@ path or using an unsupported method.
 You need to provide one of `json`, `text` or `body` for the view to return, the
 other arguments are all optional, defaulting to creating a `GET` view with a
 status code 200 and listen on port 5000.
+
+## Request tracking
+
+Each request made to the view while it is alive is tracked. The tracker simply
+tracks the request method, path, headers, query and json payload if there is
+one. Each tracked request is stored in a `RequestTracker` instance that is
+yielded from the context manager. Example of call verification is in the
+example above.
