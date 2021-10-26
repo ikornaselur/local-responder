@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Awaitable, Callable, Literal, Optional, Union
+from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Union
+from typing_extensions import Literal
 
 from aiohttp import web
 
